@@ -1,0 +1,15 @@
+# IDEA
+.idea/
+*.iml
+
+# 编译产物
+target/
+out/
+
+# 日志
+logs/
+*.log
+
+# 含真实密码/密钥的本地配置,不入库(模板见 application-dev-example.yml)
+sky-take-out/sky-server/src/main/resources/application-dev.yml
+/.codex/checks/

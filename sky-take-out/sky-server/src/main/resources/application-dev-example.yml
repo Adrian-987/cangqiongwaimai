@@ -1,0 +1,20 @@
+# 本文件为配置模板。真实配置请复制为同目录下的 application-dev.yml(已被 .gitignore 忽略),并填入自己的值。
+sky:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    host: localhost
+    port: 3306
+    database: sky_take_out
+    username: root
+    password: 你的MySQL密码
+  alioss:
+    # 纯域名,不带 https:// 前缀
+    endpoint: oss-cn-beijing.aliyuncs.com
+    bucket-name: 你的bucket名
+    access-key-secret: 你的AccessKeySecret
+    access-key-id: 你的AccessKeyId
+  redis:
+    host: localhost
+    port: 6379
+    password: 你的Redis密码
+    database: 0
