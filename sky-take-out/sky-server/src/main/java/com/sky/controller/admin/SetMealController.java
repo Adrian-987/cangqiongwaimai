@@ -8,6 +8,8 @@ import com.sky.service.SetMealService;
 import com.sky.vo.SetmealVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,6 +22,7 @@ public class SetMealController {
     SetMealService setMealService;
 
     @PostMapping
+    @CacheEvict(cacheNames = "setmeal",key = "#setmealDTO.categoryId")
     public Result insertSetmeal(@RequestBody SetmealDTO setmealDTO){
         log.info("新增套餐和套餐关联表:{}",setmealDTO);
         setMealService.insertSetmeal(setmealDTO);
@@ -34,12 +37,14 @@ public class SetMealController {
     }
 
     @DeleteMapping
+    @CacheEvict(cacheNames = "setmeal",allEntries = true)
     public Result delectByIds(@RequestParam List<Long> ids){
         log.info("根据id删除,特判是否起售:{}",ids);
         setMealService.delectByIds(ids);
         return Result.success();
     }
 
+    @CacheEvict(cacheNames = "setmeal",allEntries = true)
     @PostMapping("/status/{status}")
     public Result updateStatus(@PathVariable Integer status,Long id){
         log.info("更新起售状态,菜品不可停售");
@@ -55,8 +60,9 @@ public class SetMealController {
     }
 
     @PutMapping
+    @CacheEvict(cacheNames = "setmeal",allEntries = true)
     public Result updateMeal(@RequestBody SetmealDTO setmealDTO){
-        log.info("根本数据,先删后改");
+        log.info("更新数据,先删后改");
         setMealService.updateMeal(setmealDTO);
         return Result.success();
     }

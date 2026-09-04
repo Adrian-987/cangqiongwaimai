@@ -9,6 +9,8 @@ import com.sky.service.DishService;
 import com.sky.vo.DishVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,6 +24,7 @@ public class DishController {
     DishService dishService;
 
     //添加菜品和口味
+    @CacheEvict(cacheNames = "dish",key = "#dishDTO.categoryId")
     @PostMapping
     public Result insertDish(@RequestBody DishDTO dishDTO){
         log.info("添加菜品{}",dishDTO);
@@ -38,18 +41,22 @@ public class DishController {
     }
 
     //批量删除,在service进行判断能否删除
+    @CacheEvict(cacheNames = "dish",allEntries = true)
     @DeleteMapping
     public Result delectByIds(@RequestParam List<Long> ids){
         dishService.delectByIds(ids);
         return Result.success();
     }
 
+    //根据id查询
     @GetMapping("/{id}")
     public Result selectById(@PathVariable Long id){
         DishVO dishVO=dishService.selectById(id);
         return Result.success(dishVO);
     }
 
+    //修改数据
+    @CacheEvict(cacheNames = "dish",key = "#dishDTO.categoryId")
     @PutMapping
     public Result updateDish(@RequestBody DishDTO dishDTO){
         log.info("修改数据{}",dishDTO);
@@ -63,4 +70,10 @@ public class DishController {
         return Result.success(list);
     }
 
+    @PostMapping("/status/{status}")
+    @CacheEvict(cacheNames = "dish",allEntries = true)
+    public Result updateStatus(@PathVariable Integer status,Long id){
+        dishService.updateStatus(status,id);
+        return Result.success();
+    }
 }

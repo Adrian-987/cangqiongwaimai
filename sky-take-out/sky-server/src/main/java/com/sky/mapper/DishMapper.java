@@ -38,4 +38,6 @@ public interface DishMapper {
     List<Dish> selectBycaId(Long categoryId);
 
     List<Dish> selectByMealId(Long id);
+
+    void updateStatus(Integer status,Long id);
 }

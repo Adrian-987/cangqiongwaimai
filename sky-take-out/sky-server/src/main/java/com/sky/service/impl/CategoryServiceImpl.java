@@ -106,11 +106,8 @@ public class CategoryServiceImpl implements CategoryService {
         categoryMapper.update(category);
     }
 
-    /**
-     * 启用、禁用分类
-     * @param status
-     * @param id
-     */
+
+    @Override
     public void startOrStop(Integer status, Long id) {
         Category category = Category.builder()
                 .id(id)
@@ -121,11 +118,8 @@ public class CategoryServiceImpl implements CategoryService {
         categoryMapper.update(category);
     }
 
-    /**
-     * 根据类型查询分类
-     * @param type
-     * @return
-     */
+
+    @Override
     public List<Category> list(Integer type) {
         return categoryMapper.list(type);
     }

@@ -16,6 +16,7 @@ import com.sky.mapper.SetmealFishMapper;
 import com.sky.mapper.SetmealMapper;
 import com.sky.result.PageResult;
 import com.sky.service.SetMealService;
+import com.sky.vo.DishItemVO;
 import com.sky.vo.SetmealVO;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,10 +43,13 @@ public class SetMealServiceImpl implements SetMealService {
         BeanUtils.copyProperties(setmealDTO,setmeal);
         setmealMapper.insertSetmeal(setmeal);
         List<SetmealDish> list=setmealDTO.getSetmealDishes();
-        list.forEach(setmealDish -> {
-            setmealDish.setSetmealId(setmeal.getId());
-        });
-        setmealFishMapper.insert(list);
+        //判空防止NPE
+        if (list != null && list.size() > 0) {
+            list.forEach(setmealDish -> {
+                setmealDish.setSetmealId(setmeal.getId());
+            });
+            setmealFishMapper.insert(list);
+        }
     }
 
     @Override
@@ -104,9 +108,26 @@ public class SetMealServiceImpl implements SetMealService {
         setmealMapper.updateMeal(setmeal);
         setmealFishMapper.delectBySetmealId(setmealDTO.getId());
         List<SetmealDish> setmealDishes=setmealDTO.getSetmealDishes();
-        setmealDishes.forEach(setmealDish -> {
-            setmealDish.setSetmealId(setmealDTO.getId());
-        });
-        setmealFishMapper.insert(setmealDishes);
+        //判空防止NPE
+        if (setmealDishes != null && setmealDishes.size() > 0) {
+            setmealDishes.forEach(setmealDish -> {
+                setmealDish.setSetmealId(setmealDTO.getId());
+            });
+            setmealFishMapper.insert(setmealDishes);
+        }
     }
+
+
+    @Override
+    public List<Setmeal> list(Setmeal setmeal) {
+        List<Setmeal> list = setmealMapper.list(setmeal);
+        return list;
+    }
+
+
+    @Override
+    public List<DishItemVO> getDishItemById(Long id) {
+        return setmealMapper.getDishItemBySetmealId(id);
+    }
+
 }

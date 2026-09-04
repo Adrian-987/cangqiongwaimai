@@ -33,11 +33,26 @@ public class GlobalExceptionHandler {
     public Result exceptionHander(SQLIntegrityConstraintViolationException exception){
         String message=exception.getMessage();
         if(message.contains("Duplicate entry")){
+            //加长度保护，防止消息格式不符合预期时数组越界
             String mess[]=message.split(" ");
-            String msg=mess[2]+ MessageConstant.ALREADY_EXITS;
-            return Result.error(msg);
+            if (mess.length > 2) {
+                String msg=mess[2]+ MessageConstant.ALREADY_EXITS;
+                return Result.error(msg);
+            }
+            return Result.error(MessageConstant.UNKNOWN_ERROR);
         }else {
             return Result.error(MessageConstant.UNKNOWN_ERROR);
         }
+    }
+
+    /**
+     * 兜底异常处理，保证所有异常都以统一Result格式返回，避免前端收到500白页
+     * @param ex
+     * @return
+     */
+    @ExceptionHandler(Exception.class)
+    public Result unexpectedExceptionHandler(Exception ex){
+        log.error("未知异常：", ex);
+        return Result.error(MessageConstant.UNKNOWN_ERROR);
     }
 }
