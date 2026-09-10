@@ -14,12 +14,12 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.math.BigDecimal;
 import java.security.PrivateKey;
 import java.security.Signature;
@@ -33,6 +33,7 @@ import java.util.List;
  * 微信支付工具类
  */
 @Component
+@Slf4j
 public class WeChatPayUtil {
 
     //微信支付下单接口地址
@@ -49,27 +50,21 @@ public class WeChatPayUtil {
      *
      * @return
      */
-    private CloseableHttpClient getClient() {
-        PrivateKey merchantPrivateKey = null;
-        try {
-            //merchantPrivateKey商户API私钥，如何加载商户API私钥请看常见问题
-            merchantPrivateKey = PemUtil.loadPrivateKey(new FileInputStream(new File(weChatProperties.getPrivateKeyFilePath())));
-            //加载平台证书文件
-            X509Certificate x509Certificate = PemUtil.loadCertificate(new FileInputStream(new File(weChatProperties.getWeChatPayCertFilePath())));
-            //wechatPayCertificates微信支付平台证书列表。你也可以使用后面章节提到的“定时更新平台证书功能”，而不需要关心平台证书的来龙去脉
-            List<X509Certificate> wechatPayCertificates = Arrays.asList(x509Certificate);
+    private CloseableHttpClient getClient() throws Exception {
+        //merchantPrivateKey商户API私钥，如何加载商户API私钥请看常见问题
+        PrivateKey merchantPrivateKey = PemUtil.loadPrivateKey(new FileInputStream(new File(weChatProperties.getPrivateKeyFilePath())));
+        //加载平台证书文件
+        X509Certificate x509Certificate = PemUtil.loadCertificate(new FileInputStream(new File(weChatProperties.getWeChatPayCertFilePath())));
+        //wechatPayCertificates微信支付平台证书列表。你也可以使用后面章节提到的“定时更新平台证书功能”，而不需要关心平台证书的来龙去脉
+        List<X509Certificate> wechatPayCertificates = Arrays.asList(x509Certificate);
 
-            WechatPayHttpClientBuilder builder = WechatPayHttpClientBuilder.create()
-                    .withMerchant(weChatProperties.getMchid(), weChatProperties.getMchSerialNo(), merchantPrivateKey)
-                    .withWechatPay(wechatPayCertificates);
+        WechatPayHttpClientBuilder builder = WechatPayHttpClientBuilder.create()
+                .withMerchant(weChatProperties.getMchid(), weChatProperties.getMchSerialNo(), merchantPrivateKey)
+                .withWechatPay(wechatPayCertificates);
 
-            // 通过WechatPayHttpClientBuilder构造的HttpClient，会自动的处理签名和验签
-            CloseableHttpClient httpClient = builder.build();
-            return httpClient;
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            return null;
-        }
+        // 通过WechatPayHttpClientBuilder构造的HttpClient，会自动的处理签名和验签
+        // 证书/私钥文件缺失时直接抛出异常，由调用方感知；不要 return null，否则后续必然 NPE，难以定位
+        return builder.build();
     }
 
     /**
@@ -80,21 +75,18 @@ public class WeChatPayUtil {
      * @return
      */
     private String post(String url, String body) throws Exception {
-        CloseableHttpClient httpClient = getClient();
+        //try-with-resources 保证请求异常时 httpClient/response 也能被关闭，避免连接泄漏
+        try (CloseableHttpClient httpClient = getClient()) {
+            HttpPost httpPost = new HttpPost(url);
+            httpPost.addHeader(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.toString());
+            httpPost.addHeader(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.toString());
+            httpPost.addHeader("Wechatpay-Serial", weChatProperties.getMchSerialNo());
+            httpPost.setEntity(new StringEntity(body, "UTF-8"));
 
-        HttpPost httpPost = new HttpPost(url);
-        httpPost.addHeader(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.toString());
-        httpPost.addHeader(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.toString());
-        httpPost.addHeader("Wechatpay-Serial", weChatProperties.getMchSerialNo());
-        httpPost.setEntity(new StringEntity(body, "UTF-8"));
-
-        CloseableHttpResponse response = httpClient.execute(httpPost);
-        try {
-            String bodyAsString = EntityUtils.toString(response.getEntity());
-            return bodyAsString;
-        } finally {
-            httpClient.close();
-            response.close();
+            //真正发送请求微信支付
+            try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
+                return EntityUtils.toString(response.getEntity());
+            }
         }
     }
 
@@ -168,7 +160,11 @@ public class WeChatPayUtil {
         String bodyAsString = jsapi(orderNum, total, description, openid);
         //解析返回结果
         JSONObject jsonObject = JSON.parseObject(bodyAsString);
-        System.out.println(jsonObject);
+        if (jsonObject == null) {
+            //微信未返回可解析的内容（网络异常/空响应），直接抛错，避免继续取值导致 NPE
+            throw new RuntimeException("微信支付下单失败：未获取到有效响应");
+        }
+        log.debug("微信支付下单返回：{}", jsonObject);
 
         String prepayId = jsonObject.getString("prepay_id");
         if (prepayId != null) {

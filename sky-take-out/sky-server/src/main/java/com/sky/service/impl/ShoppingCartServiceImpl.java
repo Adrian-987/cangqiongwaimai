@@ -1,11 +1,13 @@
 package com.sky.service.impl;
 
 import com.sky.constant.MessageConstant;
+import com.sky.constant.StatusConstant;
 import com.sky.context.BaseContext;
 import com.sky.dto.ShoppingCartDTO;
 import com.sky.entity.Dish;
 import com.sky.entity.Setmeal;
 import com.sky.entity.ShoppingCart;
+import com.sky.exception.ShoppingCartBusinessException;
 import com.sky.mapper.DishMapper;
 import com.sky.mapper.SetmealMapper;
 import com.sky.mapper.ShoppingCartMapper;
@@ -41,12 +43,26 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
             Long dishId=shoppingCart.getDishId();
             if (dishId!=null){
                 Dish dish = dishMapper.selectById(dishId);
+                //判空防止NPE，并校验菜品是否起售
+                if (dish==null){
+                    throw new ShoppingCartBusinessException(MessageConstant.ORDER_NOT_FOUND);
+                }
+                if (!StatusConstant.ENABLE.equals(dish.getStatus())){
+                    throw new ShoppingCartBusinessException(MessageConstant.DISH_ALREADY_STOP);
+                }
                 shoppingCart.setAmount(dish.getPrice());
                 shoppingCart.setName(dish.getName());
                 shoppingCart.setImage(dish.getImage());
             }else {
                 Long setMealId=shoppingCart.getSetmealId();
                 Setmeal setmeal=setmealMapper.selectById(setMealId);
+                //判空防止NPE，并校验套餐是否起售
+                if (setmeal==null){
+                    throw new ShoppingCartBusinessException(MessageConstant.ORDER_NOT_FOUND);
+                }
+                if (!StatusConstant.ENABLE.equals(setmeal.getStatus())){
+                    throw new ShoppingCartBusinessException(MessageConstant.SETMEAL_ALREADY_STOP);
+                }
                 shoppingCart.setAmount(setmeal.getPrice());
                 shoppingCart.setName(setmeal.getName());
                 shoppingCart.setImage(setmeal.getImage());
@@ -73,6 +89,8 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
     public void updateSub(ShoppingCartDTO shoppingCartDTO) {
         ShoppingCart shoppingCart=new ShoppingCart();
         BeanUtils.copyProperties(shoppingCartDTO,shoppingCart);
+        //限定只操作当前登录用户自己的购物车，防止跨用户修改
+        shoppingCart.setUserId(BaseContext.getCurrentId());
         ShoppingCart shoppingCart1=shoppingCartMapper.selectShopping(shoppingCart);
         if (shoppingCart1!=null){
             Integer number=shoppingCart1.getNumber();
@@ -82,7 +100,7 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
                 shoppingCartMapper.updateByid(shoppingCart1.getId(),number-1);
             }
         }else {
-            throw new RuntimeException(MessageConstant.UNKNOWN_ERROR);
+            throw new ShoppingCartBusinessException(MessageConstant.SHOPPING_CART_IS_NULL);
         }
     }
 }

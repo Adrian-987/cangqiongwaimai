@@ -12,6 +12,7 @@ import com.sky.dto.EmployeePageQueryDTO;
 import com.sky.entity.Employee;
 import com.sky.exception.AccountLockedException;
 import com.sky.exception.AccountNotFoundException;
+import com.sky.exception.BaseException;
 import com.sky.exception.PasswordErrorException;
 import com.sky.mapper.EmployeeMapper;
 import com.sky.result.PageResult;
@@ -56,7 +57,8 @@ public class EmployeeServiceImpl implements EmployeeService {
             throw new PasswordErrorException(MessageConstant.PASSWORD_ERROR);
         }
 
-        if (employee.getStatus() == StatusConstant.DISABLE) {
+        //用常量.equals 比较而非 ==：Integer 只在 -128~127 命中缓存，超出范围 == 会得到错误结果
+        if (StatusConstant.DISABLE.equals(employee.getStatus())) {
             //账号被锁定
             throw new AccountLockedException(MessageConstant.ACCOUNT_LOCKED);
         }
@@ -100,6 +102,9 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     public Employee selectByid(Long id) {
         Employee employee=employeeMapper.selectByid(id);
+        if (employee == null) {
+            throw new BaseException(MessageConstant.EMPLOYEE_NOT_FOUND);
+        }
         employee.setPassword("****");
         return employee;
     }

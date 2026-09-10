@@ -1,5 +1,6 @@
 package com.sky.controller.admin;
 
+import com.sky.constant.RedisKeyConstant;
 import com.sky.result.Result;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,13 +17,13 @@ public class AdminRedisController {
 
     @PutMapping("/{status}")
     public Result updateStatus(@PathVariable Integer status){
-        redisTemplate.opsForValue().set("status",status);
+        redisTemplate.opsForValue().set(RedisKeyConstant.SHOP_STATUS,status);
         return Result.success();
     }
 
     @GetMapping("/status")
     public Result<Integer> selectStatus(){
-        Integer status=(Integer) redisTemplate.opsForValue().get("status");
+        Integer status=(Integer) redisTemplate.opsForValue().get(RedisKeyConstant.SHOP_STATUS);
         return Result.success(status);
     }
 }

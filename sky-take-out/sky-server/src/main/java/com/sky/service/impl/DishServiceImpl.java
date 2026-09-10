@@ -8,6 +8,7 @@ import com.sky.dto.DishDTO;
 import com.sky.dto.DishPageQueryDTO;
 import com.sky.entity.Dish;
 import com.sky.entity.DishFlavor;
+import com.sky.exception.BaseException;
 import com.sky.exception.DeletionNotAllowedException;
 import com.sky.mapper.DishFlavorMapper;
 import com.sky.mapper.DishMapper;
@@ -60,9 +61,14 @@ public class DishServiceImpl implements DishService {
     @Transactional
     @Override
     public void delectByIds(List<Long> ids) {
+        //ids 为空时 SQL 会拼成 where id in ()，属于非法语法，直接返回
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
         for(Long id:ids){
             Dish dish=dishMapper.selectById(id);
-            if (dish.getStatus()== StatusConstant.ENABLE){
+            //菜品可能已被删除，避免空指针；用常量.equals 比较而非 ==，避免 Integer 缓存陷阱
+            if (dish != null && StatusConstant.ENABLE.equals(dish.getStatus())){
                 throw new DeletionNotAllowedException(MessageConstant.DISH_ON_SALE);
             }
         }
@@ -80,6 +86,9 @@ public class DishServiceImpl implements DishService {
     @Override
     public DishVO selectById(Long id) {
         Dish dish=dishMapper.selectById(id);
+        if (dish == null) {
+            throw new BaseException(MessageConstant.DISH_NOT_FOUND);
+        }
         DishVO dishVO=new DishVO();
         BeanUtils.copyProperties(dish,dishVO);
         List<DishFlavor> list=dishFlavorMapper.selectByDishId(id);

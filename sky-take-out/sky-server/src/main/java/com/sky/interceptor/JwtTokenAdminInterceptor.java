@@ -1,6 +1,7 @@
 package com.sky.interceptor;
 
 import com.sky.constant.JwtClaimsConstant;
+import com.sky.constant.MessageConstant;
 import com.sky.context.BaseContext;
 import com.sky.properties.JwtProperties;
 import com.sky.utils.JwtUtil;
@@ -59,8 +60,11 @@ public class JwtTokenAdminInterceptor implements HandlerInterceptor {
             //3、通过，放行
             return true;
         } catch (Exception ex) {
-            //4、不通过，响应401状态码
+            //4、不通过，响应401状态码，并携带统一Result格式提示，避免前端收到空body无从判断
             response.setStatus(401);
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write("{\"code\":0,\"msg\":\"" + MessageConstant.USER_NOT_LOGIN + "\"}");
+            response.getWriter().flush();
             return false;
         }
     }

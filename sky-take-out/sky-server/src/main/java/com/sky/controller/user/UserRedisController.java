@@ -1,5 +1,6 @@
 package com.sky.controller.user;
 
+import com.sky.constant.RedisKeyConstant;
 import com.sky.result.Result;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +19,7 @@ public class UserRedisController {
 
     @GetMapping("/status")
     public Result<Integer> selectStatus(){
-        Integer status=(Integer) redisTemplate.opsForValue().get("status");
+        Integer status=(Integer) redisTemplate.opsForValue().get(RedisKeyConstant.SHOP_STATUS);
         return Result.success(status);
     }
 

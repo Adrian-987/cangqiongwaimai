@@ -2,8 +2,10 @@ package com.sky.aspect;
 
 import com.sky.annotation.AutoFill;
 import com.sky.constant.AutoFillConstant;
+import com.sky.constant.MessageConstant;
 import com.sky.context.BaseContext;
 import com.sky.enumeration.OperationType;
+import com.sky.exception.BaseException;
 import org.aspectj.lang.reflect.MethodSignature;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
@@ -50,7 +52,10 @@ public class autoFillAspect {
                 UpdateTime.invoke(emp, localDateTime);
                 UpdateUser.invoke(emp, Id);
             } catch (Exception e) {
-                e.printStackTrace();
+                //不能吞掉异常：填充失败会让 create_time/create_user 为空，
+                //随后 SQL 报错难以定位。这里记录日志并直接抛出，让事务整体回滚。
+                log.error("公共字段自动填充失败（INSERT），实体类型：{}", emp == null ? "null" : emp.getClass().getName(), e);
+                throw new BaseException(MessageConstant.AUTO_FILL_FAILED);
             }
         } else if (operationType==OperationType.UPDATE) {
                 try{
@@ -59,7 +64,8 @@ public class autoFillAspect {
                     UpdateTime.invoke(emp, localDateTime);
                     UpdateUser.invoke(emp, Id);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    log.error("公共字段自动填充失败（UPDATE），实体类型：{}", emp == null ? "null" : emp.getClass().getName(), e);
+                    throw new BaseException(MessageConstant.AUTO_FILL_FAILED);
                 }
         }
     }

@@ -9,6 +9,7 @@ import com.sky.dto.SetmealPageQueryDTO;
 import com.sky.entity.Dish;
 import com.sky.entity.Setmeal;
 import com.sky.entity.SetmealDish;
+import com.sky.exception.BaseException;
 import com.sky.exception.DeletionNotAllowedException;
 import com.sky.exception.SetmealEnableFailedException;
 import com.sky.mapper.DishMapper;
@@ -63,9 +64,14 @@ public class SetMealServiceImpl implements SetMealService {
     @Transactional
     @Override
     public void delectByIds(List<Long> ids) {
+        //ids 为空时 SQL 会拼成 where id in ()，属于非法语法，直接返回
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
         for (Long id:ids) {
             Setmeal setmeal = setmealMapper.selectById(id);
-            if(StatusConstant.ENABLE==setmeal.getStatus()){
+            //套餐可能已被删除，避免空指针；用常量.equals 比较而非 ==，避免 Integer 缓存陷阱
+            if(setmeal != null && StatusConstant.ENABLE.equals(setmeal.getStatus())){
                 throw new DeletionNotAllowedException(MessageConstant.SETMEAL_ON_SALE);
             }
         }
@@ -77,11 +83,11 @@ public class SetMealServiceImpl implements SetMealService {
 
     @Override
     public void updateStatus(Integer status, Long id) {
-        if(status==StatusConstant.ENABLE){
+        if(StatusConstant.ENABLE.equals(status)){
             List<Dish> list=dishMapper.selectByMealId(id);
             if (list!=null&&list.size()>0){
                 list.forEach(dish -> {
-                    if (dish.getStatus()!=StatusConstant.ENABLE){
+                    if (!StatusConstant.ENABLE.equals(dish.getStatus())){
                         throw new SetmealEnableFailedException(MessageConstant.SETMEAL_ENABLE_FAILED);
                     }
                 });
@@ -93,6 +99,9 @@ public class SetMealServiceImpl implements SetMealService {
     @Override
     public SetmealVO selectByid(Long id) {
         Setmeal setmeal=setmealMapper.selectById(id);
+        if (setmeal == null) {
+            throw new BaseException(MessageConstant.SETMEAL_NOT_FOUND);
+        }
         List<SetmealDish> list=setmealFishMapper.selectBySetmealId(id);
         SetmealVO setmealVO=new SetmealVO();
         BeanUtils.copyProperties(setmeal,setmealVO);

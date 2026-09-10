@@ -53,6 +53,10 @@ public class UserServiceImpl implements UserService {
         map.put("grant_type","authorization_code");
         String json=HttpClientUtil.doGet(WX_LOGIN,map);
         JSONObject jsonObject = JSON.parseObject(json);
+        //请求失败/空响应时 parseObject 返回 null，直接判空，避免后续取值抛 NPE
+        if(jsonObject == null){
+            throw new LoginFailedException(MessageConstant.LOGIN_FAILED);
+        }
         String openId=jsonObject.getString("openid");
         if (openId == null || openId.trim().isEmpty()) {
             String errcode = jsonObject.getString("errcode");

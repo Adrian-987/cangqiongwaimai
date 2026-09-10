@@ -1,6 +1,7 @@
 package com.sky.utils;
 
 import com.alibaba.fastjson.JSONObject;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
@@ -23,6 +24,7 @@ import java.util.Map;
 /**
  * Http工具类
  */
+@Slf4j
 public class HttpClientUtil {
 
     static final  int TIMEOUT_MSEC = 5 * 1000;
@@ -51,6 +53,7 @@ public class HttpClientUtil {
 
             //创建GET请求
             HttpGet httpGet = new HttpGet(uri);
+            httpGet.setConfig(builderRequestConfig());
 
             //发送请求
             response = httpClient.execute(httpGet);
@@ -58,15 +61,20 @@ public class HttpClientUtil {
             //判断响应状态
             if(response.getStatusLine().getStatusCode() == 200){
                 result = EntityUtils.toString(response.getEntity(),"UTF-8");
+            }else{
+                log.error("HttpClientUtil.doGet 响应状态异常：{}，url={}", response.getStatusLine().getStatusCode(), url);
             }
         }catch (Exception e){
-            e.printStackTrace();
+            log.error("HttpClientUtil.doGet 请求失败，url={}", url, e);
         }finally {
             try {
-                response.close();
+                //response 可能为 null（请求发送前就异常），直接 close 会 NPE 并掩盖真正的异常
+                if (response != null) {
+                    response.close();
+                }
                 httpClient.close();
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error("关闭HTTP连接失败", e);
             }
         }
 
@@ -107,13 +115,14 @@ public class HttpClientUtil {
             response = httpClient.execute(httpPost);
 
             resultString = EntityUtils.toString(response.getEntity(), "UTF-8");
-        } catch (Exception e) {
-            throw e;
         } finally {
             try {
-                response.close();
+                if (response != null) {
+                    response.close();
+                }
+                httpClient.close();
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error("关闭HTTP连接失败", e);
             }
         }
 
@@ -157,13 +166,14 @@ public class HttpClientUtil {
             response = httpClient.execute(httpPost);
 
             resultString = EntityUtils.toString(response.getEntity(), "UTF-8");
-        } catch (Exception e) {
-            throw e;
         } finally {
             try {
-                response.close();
+                if (response != null) {
+                    response.close();
+                }
+                httpClient.close();
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error("关闭HTTP连接失败", e);
             }
         }
 

@@ -56,7 +56,8 @@ public class DishController {
     }
 
     //修改数据
-    @CacheEvict(cacheNames = "dish",key = "#dishDTO.categoryId")
+    //菜品可能被改到其它分类，只按新分类id清缓存会漏掉旧分类的缓存，故清空全部dish缓存
+    @CacheEvict(cacheNames = "dish",allEntries = true)
     @PutMapping
     public Result updateDish(@RequestBody DishDTO dishDTO){
         log.info("修改数据{}",dishDTO);
