@@ -24,7 +24,7 @@ public class DishController {
     DishService dishService;
 
     //添加菜品和口味
-    @CacheEvict(cacheNames = "dish",key = "#dishDTO.categoryId")
+
     @PostMapping
     public Result insertDish(@RequestBody DishDTO dishDTO){
         log.info("添加菜品{}",dishDTO);
@@ -41,7 +41,7 @@ public class DishController {
     }
 
     //批量删除,在service进行判断能否删除
-    @CacheEvict(cacheNames = "dish",allEntries = true)
+
     @DeleteMapping
     public Result delectByIds(@RequestParam List<Long> ids){
         dishService.delectByIds(ids);
@@ -57,7 +57,7 @@ public class DishController {
 
     //修改数据
     //菜品可能被改到其它分类，只按新分类id清缓存会漏掉旧分类的缓存，故清空全部dish缓存
-    @CacheEvict(cacheNames = "dish",allEntries = true)
+
     @PutMapping
     public Result updateDish(@RequestBody DishDTO dishDTO){
         log.info("修改数据{}",dishDTO);
@@ -72,7 +72,6 @@ public class DishController {
     }
 
     @PostMapping("/status/{status}")
-    @CacheEvict(cacheNames = "dish",allEntries = true)
     public Result updateStatus(@PathVariable Integer status,Long id){
         dishService.updateStatus(status,id);
         return Result.success();

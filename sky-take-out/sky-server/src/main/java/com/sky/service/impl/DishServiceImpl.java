@@ -18,6 +18,7 @@ import com.sky.service.DishService;
 import com.sky.vo.DishVO;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +36,7 @@ public class DishServiceImpl implements DishService {
 
 
     @Transactional
+    @CacheEvict(cacheNames = "dish",key = "#dishDTO.categoryId")
     @Override
     public void insertDish(DishDTO dishDTO) {
         Dish dish=new Dish();
@@ -60,6 +62,7 @@ public class DishServiceImpl implements DishService {
 
     @Transactional
     @Override
+    @CacheEvict(cacheNames = "dish",allEntries = true)
     public void delectByIds(List<Long> ids) {
         //ids 为空时 SQL 会拼成 where id in ()，属于非法语法，直接返回
         if (ids == null || ids.isEmpty()) {
@@ -98,6 +101,7 @@ public class DishServiceImpl implements DishService {
 
     @Transactional
     @Override
+    @CacheEvict(cacheNames = "dish",allEntries = true)
     public void updateDish(DishDTO dishDTO) {
         Dish dish=new Dish();
         BeanUtils.copyProperties(dishDTO,dish);
@@ -138,6 +142,7 @@ public class DishServiceImpl implements DishService {
     }
 
     @Override
+    @CacheEvict(cacheNames = "dish",allEntries = true)
     public void updateStatus(Integer status,Long id) {
         dishMapper.updateStatus(status,id);
     }

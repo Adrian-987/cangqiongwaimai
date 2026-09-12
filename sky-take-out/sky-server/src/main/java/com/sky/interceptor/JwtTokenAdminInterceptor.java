@@ -24,18 +24,9 @@ public class JwtTokenAdminInterceptor implements HandlerInterceptor {
     @Autowired
     private JwtProperties jwtProperties;
 
-    /**
-     * 校验jwt
-     *
-     * @param request
-     * @param response
-     * @param handler
-     * @return
-     * @throws Exception
-     */
-    /**
-     * 请求结束后清理ThreadLocal，防止线程池复用导致操作人id残留
-     */
+    //方法都是接口继承,固定实际执行,只要写进入controller之前和controller之后的的业务逻辑,比如jwt校验
+
+   //清理线程变量
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
         BaseContext.removeCurrentId();
     }
